@@ -1,0 +1,13 @@
+import fs from 'node:fs';
+const html = fs.readFileSync('index.html', 'utf8');
+const js = fs.readFileSync('app.js', 'utf8');
+const ids = new Set([...html.matchAll(/\bid="([^"]+)"/g)].map((m) => m[1]));
+const used = new Set([...js.matchAll(/\$\('([^']+)'\)/g)].map((m) => m[1]));
+const missing = [...used].filter((i) => !ids.has(i));
+const acts = new Set([...html.matchAll(/data-act="([^"]+)"/g)].map((m) => m[1]));
+const handlers = new Set([...js.matchAll(/^\s{2}'?([a-z-]+)'?:\s/gm)].map((m) => m[1]));
+const noHandler = [...acts].filter((a) => !handlers.has(a));
+const dynamicActs = [...js.matchAll(/data-act="([^"]+)"/g)].map((m) => m[1]).filter((a) => !handlers.has(a));
+const inline = (html.match(/\son[a-z]+=/g) || []).length;
+console.log({ missingIds: missing, actsWithoutHandler: noHandler, dynamicActsWithoutHandler: dynamicActs, inlineHandlers: inline });
+process.exit(missing.length || noHandler.length || dynamicActs.length || inline ? 1 : 0);
